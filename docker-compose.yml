@@ -1,0 +1,35 @@
+version: '3.7'
+services:
+ # Jenkins service for CI/CD pipeline
+  dind:
+    image: docker:dind #using dind image
+    user: root
+    privileged: true #To enable Docker daemon functionality
+    container_name: dind # Naming container dind
+    expose:
+      - 2375
+    networks:
+      - jenkins_dind
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    user: root
+    container_name: jenkins
+    depends_on:
+      - dind
+    ports:
+      - 8080:8080   # Jenkins web interface on port 8080
+      - 50000:50000 # Port for Jenkins agent communication
+    volumes:
+      - ./jenkins:/var/jenkins_home # Persist Jenkins data
+      - /usr/bin/docker:/usr/bin/docker # Allow Jenkins to access Docker
+    environment:
+      DOCKER_HOST: "tcp://dind:2375" # Point to Docker daemon in the dind container
+    networks:
+      - jenkins_dind
+
+networks:
+  jenkins_dind:
+    driver: bridge
